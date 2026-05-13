@@ -530,6 +530,22 @@
     }
     #fs-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ── Version tag ── */
+    #version-tag {
+      position: fixed;
+      bottom: 10px;
+      right: 14px;
+      font-size: 11px;
+      color: var(--gray-400);
+      font-family: var(--font-body);
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+    }
+    /* Hide when fullscreen overlay is active */
+    #fullscreen-overlay.active ~ #version-tag { display: none; }
+
   </style>
 </head>
 <body>
@@ -615,6 +631,8 @@
 
   </div>
 
+  <span id="version-tag">Version 1.6</span>
+
   <script>
     // ── State ──────────────────────────────────────────────────────────────────
     const PRESETS = [30, 45, 60, 90, 120];
@@ -697,6 +715,10 @@
         readingTotal = m * 60;
         updateReadingPresetBtns();
         updateReadingDisplay();
+        if (phase === "idle" && readingEnabled) {
+          remaining = readingTotal;
+        }
+        render();
       });
       $readingPresetsWrap.appendChild(btn);
     });
@@ -852,8 +874,8 @@
         // If idle and reading enabled, update remaining
         if (phase === "idle" && readingEnabled) {
           remaining = readingTotal;
-          render();
         }
+        render();
       }
     }
 
