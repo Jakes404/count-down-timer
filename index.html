@@ -152,25 +152,6 @@
       display: none;
     }
 
-    /* ── Progress bar ── */
-    .progress-wrap {
-      width: 100%;
-      height: 10px;
-      background: var(--gray-200);
-      border-radius: 99px;
-      overflow: hidden;
-      margin-bottom: 24px;
-    }
-    #progress-bar {
-      height: 100%;
-      background: var(--blue);
-      border-radius: 99px;
-      transition: width 1s linear, background 0.4s;
-      width: 100%;
-    }
-    #progress-bar.reading { background: var(--purple); }
-    #progress-bar.low, #progress-bar.done { background: var(--red); }
-
     /* ── Controls row ── */
     .controls {
       display: flex;
@@ -507,26 +488,6 @@
       font-family: var(--font-body);
     }
 
-    .fs-progress-wrap {
-      width: 80%;
-      max-width: 900px;
-      height: 14px;
-      background: var(--gray-200);
-      border-radius: 99px;
-      overflow: hidden;
-      margin: 22px 0 28px;
-    }
-
-    #fs-progress-bar {
-      height: 100%;
-      background: var(--blue);
-      border-radius: 99px;
-      width: 100%;
-      transition: width 1s linear, background 0.4s;
-    }
-    #fs-progress-bar.reading { background: var(--purple); }
-    #fs-progress-bar.low, #fs-progress-bar.done { background: var(--red); }
-
     /* Fullscreen pause btn fades */
     #fs-controls {
       opacity: 1;
@@ -563,14 +524,6 @@
     }
     #fs-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* Flash animation */
-    @keyframes flash-bg {
-      0%, 100% { background: #fff5f5; }
-      50% { background: var(--red); }
-    }
-    body.flashing, #fullscreen-overlay.flashing {
-      animation: flash-bg 0.8s ease infinite;
-    }
   </style>
 </head>
 <body>
@@ -598,10 +551,6 @@
     <div id="clock">30:00</div>
 
     <p id="reading-sub"></p>
-
-    <div class="progress-wrap">
-      <div id="progress-bar"></div>
-    </div>
 
     <div class="controls">
       <button id="start-btn">▶ Begin</button>
@@ -654,10 +603,6 @@
     <div id="fs-clock">30:00</div>
     <p id="fs-reading-sub"></p>
 
-    <div class="fs-progress-wrap">
-      <div id="fs-progress-bar"></div>
-    </div>
-
     <div id="fs-controls">
       <button id="fs-start-btn">▶</button>
     </div>
@@ -675,10 +620,8 @@
     let phase        = "idle";   // idle | reading | exam | done
     let remaining    = 30 * 60;
     let running      = false;
-    let flashCount   = 0;
 
     let tickInterval  = null;
-    let flashInterval = null;
     let mouseTimer    = null;
     let isFullscreen  = false;
 
@@ -704,8 +647,6 @@
     const $fsClock      = document.getElementById("fs-clock");
     const $phaseLabel   = document.getElementById("phase-label");
     const $fsPhase      = document.getElementById("fs-phase");
-    const $progressBar  = document.getElementById("progress-bar");
-    const $fsProgressBar= document.getElementById("fs-progress-bar");
     const $startBtn     = document.getElementById("start-btn");
     const $fsStartBtn   = document.getElementById("fs-start-btn");
     const $readingSub   = document.getElementById("reading-sub");
@@ -760,9 +701,6 @@
       const isLow      = remaining <= 60 && remaining > 0 && phase === "exam";
       const isVeryLow  = remaining <= 30 && remaining > 0 && phase === "exam";
       const isReading  = phase === "reading";
-      const currentTotal = isReading ? readingTotal : examTotal;
-      const progress   = currentTotal > 0 ? remaining / currentTotal : 0;
-
       // Clock text
       const clockText = finished ? "Tyd Verstreke!" : formatTime(remaining);
       $clock.textContent = clockText;
@@ -789,14 +727,6 @@
       $fsPhase.textContent = phaseText;
       $phaseLabel.className = isReading ? "reading" : "";
       $fsPhase.className = isReading ? "reading" : "";
-
-      // Progress bar
-      const barW = `${progress * 100}%`;
-      const barClass = finished ? "done" : isLow ? "low" : isReading ? "reading" : "";
-      $progressBar.style.width = barW;
-      $progressBar.className = barClass;
-      $fsProgressBar.style.width = barW;
-      $fsProgressBar.className = barClass;
 
       // Reading sub info
       if (isReading) {
@@ -836,7 +766,6 @@
             phase = "done";
             remaining = 0;
             running = false;
-            startFlash();
           }
           render();
           return;
@@ -847,22 +776,6 @@
     }
 
     function stopTick() { clearInterval(tickInterval); }
-
-    function startFlash() {
-      flashCount = 0;
-      clearInterval(flashInterval);
-      flashInterval = setInterval(() => {
-        flashCount++;
-        const on = flashCount % 2 === 1;
-        $body.style.background = on ? "#ef4444" : "#fff5f5";
-        $fsOverlay.style.background = on ? "#ef4444" : "#fff5f5";
-        if (flashCount >= 15) {
-          clearInterval(flashInterval);
-          $body.style.background = "";
-          $fsOverlay.style.background = "";
-        }
-      }, 400);
-    }
 
     // ── Handlers ───────────────────────────────────────────────────────────────
     function handleStart() {
@@ -886,9 +799,6 @@
 
     function handleReset() {
       stopTick();
-      clearInterval(flashInterval);
-      $body.style.background = "";
-      $fsOverlay.style.background = "";
       running = false;
       phase = "idle";
       remaining = readingEnabled ? readingTotal : examTotal;
@@ -899,9 +809,6 @@
       const secs = minutes * 60;
       examTotal = secs;
       stopTick();
-      clearInterval(flashInterval);
-      $body.style.background = "";
-      $fsOverlay.style.background = "";
       running = false;
       phase = "idle";
       remaining = readingEnabled ? readingTotal : secs;
