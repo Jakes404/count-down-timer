@@ -138,7 +138,6 @@
       transition: color 0.4s, font-size 0.3s;
       font-size: clamp(80px, 22vw, 190px);
     }
-    #clock.hours { font-size: clamp(60px, 16vw, 150px); }
     #clock.reading { color: var(--purple); }
     #clock.low { color: var(--orange); }
     #clock.very-low, #clock.done { color: var(--red); }
@@ -150,6 +149,10 @@
       color: var(--gray-400);
       margin-bottom: 8px;
       display: none;
+    }
+    #reading-sub.idle-breakdown {
+      color: var(--purple);
+      font-weight: 600;
     }
 
     /* ── Controls row ── */
@@ -474,7 +477,6 @@
       transition: color 0.4s, font-size 0.3s;
       font-size: clamp(100px, 28vw, 280px);
     }
-    #fs-clock.hours { font-size: clamp(80px, 20vw, 210px); }
     #fs-clock.reading { color: var(--purple); }
     #fs-clock.low { color: var(--orange); }
     #fs-clock.very-low, #fs-clock.done { color: var(--red); }
@@ -486,6 +488,10 @@
       margin-top: 8px;
       display: none;
       font-family: var(--font-body);
+    }
+    #fs-reading-sub.idle-breakdown {
+      color: var(--purple);
+      font-weight: 600;
     }
 
     /* Fullscreen pause btn fades */
@@ -701,6 +707,7 @@
       const isLow      = remaining <= 60 && remaining > 0 && phase === "exam";
       const isVeryLow  = remaining <= 30 && remaining > 0 && phase === "exam";
       const isReading  = phase === "reading";
+      const isIdleWithReading = phase === "idle" && readingEnabled;
       // Clock text
       const clockText = finished ? "Tyd Verstreke!" : formatTime(remaining);
       $clock.textContent = clockText;
@@ -710,12 +717,10 @@
       const clockClass = finished ? "done"
         : isVeryLow ? "very-low"
         : isLow     ? "low"
-        : isReading ? "reading"
+        : (isReading || isIdleWithReading) ? "reading"
         : "";
-      const hoursClass = (!finished && remaining >= 3600) ? "hours" : "";
-
       [$clock, $fsClock].forEach(el => {
-        el.className = [clockClass, hoursClass].filter(Boolean).join(" ");
+        el.className = clockClass;
       });
 
       // Phase label
@@ -730,9 +735,22 @@
 
       // Reading sub info
       if (isReading) {
-        $readingSub.textContent = `Toetstyd daarna: ${formatTime(examTotal)}`;
+        const readingMsg = `Toetstyd daarna: ${formatTime(examTotal)}`;
+        $readingSub.textContent = readingMsg;
+        $readingSub.className = "";
         $readingSub.style.display = "block";
-        $fsReadingSub.textContent = `Toetstyd daarna: ${formatTime(examTotal)}`;
+        $fsReadingSub.textContent = readingMsg;
+        $fsReadingSub.className = "";
+        $fsReadingSub.style.display = "block";
+      } else if (isIdleWithReading) {
+        const readMin = Math.round(readingTotal / 60);
+        const examMin = Math.round(examTotal / 60);
+        const breakdownMsg = `${readMin} min lees + ${examMin} min toets`;
+        $readingSub.textContent = breakdownMsg;
+        $readingSub.className = "idle-breakdown";
+        $readingSub.style.display = "block";
+        $fsReadingSub.textContent = breakdownMsg;
+        $fsReadingSub.className = "idle-breakdown";
         $fsReadingSub.style.display = "block";
       } else {
         $readingSub.style.display = "none";
